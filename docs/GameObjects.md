@@ -11,7 +11,6 @@ classDiagram
         + playerTwo paddle
         + ball ball
 
-        + background *ebiten.Image
 
         + Update() error
         + Draw(*ebiten.Image)
@@ -22,10 +21,11 @@ classDiagram
     }
 
     class Cfg {
-        +screenWidth int
-        +screenHeight int
-        +WindowTitle string
-        faceSource *text.GoTextFaceSource
+        + screenWidth int
+        + screenHeight int
+        + WindowTitle string
+        + faceSource *text.GoTextFaceSource
+        + background *ebiten.Image
     }
 
     class paddle {
