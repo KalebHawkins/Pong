@@ -6,6 +6,5 @@ type state int
 const (
 	mainMenu state = iota
 	gameLoop
-	paused
 	gameOver
 )

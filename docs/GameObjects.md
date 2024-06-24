@@ -10,7 +10,7 @@ classDiagram
         + playerOne paddle
         + playerTwo paddle
         + ball ball
-
+        + isPaused bool
 
         + Update() error
         + Draw(*ebiten.Image)

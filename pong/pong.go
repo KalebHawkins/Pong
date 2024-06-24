@@ -26,6 +26,7 @@ type Game struct {
 	playerOne paddle
 	playerTwo paddle
 	ball
+	isPaused bool
 }
 
 // Cfg contains the Game's configuration data.
@@ -115,7 +116,9 @@ func (g *Game) Update() error {
 			g.state = gameLoop
 		}
 	case gameLoop:
-
+		if inpututil.IsKeyJustPressed(ebiten.KeySpace) || inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
+			g.isPaused = !g.isPaused
+		}
 	}
 
 	return nil
@@ -144,6 +147,9 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		g.drawMainMenu(screen)
 	case gameLoop:
 		g.drawGameLoop(screen)
+		if g.isPaused {
+			g.drawPauseMenu(screen)
+		}
 	}
 
 }
@@ -201,4 +207,16 @@ func (g *Game) drawGameLoop(screen *ebiten.Image) {
 	op.GeoM.Translate(-float64(g.ball.sprite.Bounds().Dx())/2, -float64(g.ball.sprite.Bounds().Dy())/2)
 	op.GeoM.Translate(float64(g.ball.x), float64(g.ball.y))
 	screen.DrawImage(g.ball.sprite, op)
+}
+
+func (g *Game) drawPauseMenu(screen *ebiten.Image) {
+	op := &text.DrawOptions{}
+	op.GeoM.Translate(float64(g.Cfg.ScreenWidth)/2, fontSize)
+	op.LineSpacing = fontSize
+	op.PrimaryAlign = text.AlignCenter
+	op.ColorScale.ScaleWithColor(color.Black)
+	text.Draw(screen, "GAME PAUSED", &text.GoTextFace{
+		Source: g.Cfg.faceSource,
+		Size:   fontSize,
+	}, op)
 }
