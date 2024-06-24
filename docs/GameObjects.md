@@ -29,6 +29,8 @@ classDiagram
         + backgroundImage *ebiten.Image
         + paddleImage *ebiten.Image
         + ballImage *ebiten.Image
+        + verticalLine *ebiten.Image
+        + hortizontalLine *ebiten.Image
     }
 
     class paddle {
