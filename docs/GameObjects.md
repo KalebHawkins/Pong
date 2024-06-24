@@ -18,6 +18,7 @@ classDiagram
         + Run() error
         + Reset()
         + drawMainMenu(screen *ebiten.Image)
+        + drawGameLoop(screen *ebiten.Image)
     }
 
     class Cfg {
@@ -25,7 +26,9 @@ classDiagram
         + screenHeight int
         + WindowTitle string
         + faceSource *text.GoTextFaceSource
-        + background *ebiten.Image
+        + backgroundImage *ebiten.Image
+        + paddleImage *ebiten.Image
+        + ballImage *ebiten.Image
     }
 
     class paddle {
