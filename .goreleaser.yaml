@@ -19,9 +19,11 @@ builds:
   - env:
       - CGO_ENABLED=0
     goos:
-      - linux
       - windows
-      - darwin
+    targets:
+      - windows_amd64
+    ldflags:
+      - -w -s
 
 archives:
   - format: tar.gz
@@ -30,6 +32,9 @@ archives:
       {{ .ProjectName }}_
       {{- title .Os }}_
       {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
     # use zip for windows archives
     format_overrides:
       - goos: windows
