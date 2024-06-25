@@ -19,6 +19,7 @@ classDiagram
         + Reset()
         + drawMainMenu(screen *ebiten.Image)
         + drawGameLoop(screen *ebiten.Image)
+        + drawGameOverMenu(screen *ebiten.Image)
     }
 
     class Cfg {
@@ -36,7 +37,7 @@ classDiagram
     class paddle {
         + int x
         + int y
-        + int dx
+        + int dy
         + *ebiten.Image
         + int score
     }
@@ -46,6 +47,8 @@ classDiagram
         + int y
         + int dx
         + int dy
+        + int prevDx
+        + int prevDy
         + *ebiten.Image
     }
 

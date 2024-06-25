@@ -16,6 +16,9 @@ const (
 	fontSize      = 48
 	titleFontSize = fontSize * 1.5
 	paddleWidth   = 20
+	paddleHeight  = 80
+	maxScore      = 10
+	accelerator   = 1
 )
 
 // Game is a structure containing the game data and configuration.
@@ -83,26 +86,26 @@ func NewGame(cfg *Cfg) *Game {
 
 	return &Game{
 		Cfg:   cfg,
-		state: gameLoop,
+		state: mainMenu,
 		playerOne: paddle{
 			x:      10 + paddleWidth/2,
 			y:      cfg.ScreenHeight / 2,
-			dx:     0,
+			dy:     10,
 			score:  0,
 			sprite: ebiten.NewImageFromImage(cfg.paddleImage),
 		},
 		playerTwo: paddle{
 			x:      cfg.ScreenWidth - paddleWidth/2 - 10,
 			y:      cfg.ScreenHeight / 2,
-			dx:     0,
+			dy:     10,
 			score:  0,
 			sprite: ebiten.NewImageFromImage(cfg.paddleImage),
 		},
 		ball: ball{
 			x:      cfg.ScreenWidth / 2,
 			y:      cfg.ScreenHeight / 2,
-			dx:     0,
-			dy:     0,
+			dx:     3,
+			dy:     -2,
 			sprite: ebiten.NewImageFromImage(cfg.ballImage),
 		},
 	}
@@ -112,15 +115,94 @@ func NewGame(cfg *Cfg) *Game {
 func (g *Game) Update() error {
 	switch g.state {
 	case mainMenu:
+		// Start the game.
 		if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
 			g.state = gameLoop
 		}
+
 	case gameLoop:
+		// Pause the game.
 		if inpututil.IsKeyJustPressed(ebiten.KeySpace) || inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
 			g.isPaused = !g.isPaused
+
+			// If the game is paused the ball should stop moving and no input for the players should
+			// be procesesd.
+			if g.isPaused {
+				g.ball.prevDx = g.ball.dx
+				g.ball.prevDy = g.ball.dy
+				g.ball.dx = 0
+				g.ball.dy = 0
+			} else {
+				g.ball.dx = g.ball.prevDx
+				g.ball.dy = g.ball.prevDy
+			}
+		}
+
+		// Check if player has reached the win limit.
+		if g.playerOne.score >= maxScore || g.playerTwo.score >= maxScore {
+			g.state = gameOver
+		}
+
+		if !g.isPaused {
+			g.ball.x += g.ball.dx
+			g.ball.y += g.ball.dy
+
+			// Handle player Input
+			if ebiten.IsKeyPressed(ebiten.KeyW) {
+				if g.playerOne.y >= 0+(paddleHeight/2) {
+					g.playerOne.y -= g.playerOne.dy
+				}
+			}
+			if ebiten.IsKeyPressed(ebiten.KeyS) {
+				if g.playerOne.y <= g.ScreenHeight-(paddleHeight/2) {
+					g.playerOne.y += g.playerOne.dy
+				}
+			}
+
+			if g.ball.y < g.playerTwo.y {
+				if g.playerTwo.y >= 0+(paddleHeight/2) {
+					g.playerTwo.y -= g.playerTwo.dy
+				}
+			}
+			if g.ball.y > g.playerTwo.y {
+				if g.playerTwo.y <= g.ScreenHeight-(paddleHeight/2) {
+					g.playerTwo.y += g.playerTwo.dy
+				}
+			}
+
+			// Handle ball collision with top and bottom of the screen
+			if g.ball.y <= 0 || g.ball.y >= g.ScreenHeight {
+				g.ball.dy *= -1
+			}
+
+			// Handle ball collision with playerOne
+			if g.ball.x <= g.playerOne.x+(paddleWidth/2) && g.ball.x >= g.playerOne.x-(paddleWidth/2) &&
+				g.ball.y >= g.playerOne.y-(paddleHeight/2) && g.ball.y <= g.playerOne.y+(paddleHeight/2) {
+				g.hitBall()
+			}
+
+			// Handle ball collision with playerTwo
+			if g.ball.x >= g.playerTwo.x-paddleWidth && g.ball.x <= g.playerTwo.x+(paddleWidth/2) &&
+				g.ball.y >= g.playerTwo.y-(paddleHeight/2) && g.ball.y <= g.playerTwo.y+(paddleHeight/2) {
+				g.hitBall()
+			}
+
+			// Handle player getting a score.
+			if g.ball.x > g.ScreenWidth {
+				g.resetGameLoop()
+				g.playerOne.score++
+			}
+			if g.ball.x < 0 {
+				g.resetGameLoop()
+				g.playerTwo.score++
+			}
+		}
+
+	case gameOver:
+		if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
+			g.state = mainMenu
 		}
 	}
-
 	return nil
 }
 
@@ -150,6 +232,9 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		if g.isPaused {
 			g.drawPauseMenu(screen)
 		}
+	case gameOver:
+		g.drawGameLoop(screen)
+		g.drawGameOverMenu(screen)
 	}
 
 }
@@ -189,10 +274,11 @@ func (g *Game) drawMainMenu(screen *ebiten.Image) {
 	opts.LineSpacing = fontSize
 	opts.PrimaryAlign = text.AlignCenter
 	opts.ColorScale.ScaleWithColor(color.Black)
-	text.Draw(screen, "Single Player\nMultiplayer", menuTextFace, opts)
+	text.Draw(screen, "Press Space\nto Play", menuTextFace, opts)
 }
 
 func (g *Game) drawGameLoop(screen *ebiten.Image) {
+
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(-float64(g.playerOne.sprite.Bounds().Dx())/2, -float64(g.playerOne.sprite.Bounds().Dy())/2)
 	op.GeoM.Translate(float64(g.playerOne.x), float64(g.playerOne.y))
@@ -207,6 +293,26 @@ func (g *Game) drawGameLoop(screen *ebiten.Image) {
 	op.GeoM.Translate(-float64(g.ball.sprite.Bounds().Dx())/2, -float64(g.ball.sprite.Bounds().Dy())/2)
 	op.GeoM.Translate(float64(g.ball.x), float64(g.ball.y))
 	screen.DrawImage(g.ball.sprite, op)
+
+	face := &text.GoTextFace{
+		Source: g.faceSource,
+		Size:   fontSize,
+	}
+
+	textOp := &text.DrawOptions{}
+	textOp.GeoM.Translate(float64(g.ScreenWidth/4), 0)
+	textOp.LineSpacing = fontSize
+	textOp.PrimaryAlign = text.AlignCenter
+	textOp.ColorScale.ScaleWithColor(color.Black)
+	text.Draw(screen, fmt.Sprintf("%d", g.playerOne.score), face, textOp)
+
+	textOp = &text.DrawOptions{}
+	textOp.GeoM.Translate(float64(g.ScreenWidth)-float64(g.ScreenWidth/4), 0)
+	textOp.LineSpacing = fontSize
+	textOp.PrimaryAlign = text.AlignCenter
+	textOp.ColorScale.ScaleWithColor(color.Black)
+	text.Draw(screen, fmt.Sprintf("%d", g.playerTwo.score), face, textOp)
+
 }
 
 func (g *Game) drawPauseMenu(screen *ebiten.Image) {
@@ -219,4 +325,42 @@ func (g *Game) drawPauseMenu(screen *ebiten.Image) {
 		Source: g.Cfg.faceSource,
 		Size:   fontSize,
 	}, op)
+}
+
+func (g *Game) drawGameOverMenu(screen *ebiten.Image) {
+	var winner string
+	if g.playerOne.score >= maxScore {
+		winner = "Player One"
+	} else {
+		winner = "Player Two"
+	}
+
+	op := &text.DrawOptions{}
+	op.GeoM.Translate(float64(g.Cfg.ScreenWidth)/2, fontSize)
+	op.LineSpacing = fontSize
+	op.PrimaryAlign = text.AlignCenter
+	op.ColorScale.ScaleWithColor(color.Black)
+	text.Draw(screen, fmt.Sprintf("GAME OVER\n\n\n%s\nWins!", winner), &text.GoTextFace{
+		Source: g.Cfg.faceSource,
+		Size:   fontSize,
+	}, op)
+}
+
+func (g *Game) resetGameLoop() {
+	g.ball.dx = 3
+	g.ball.dy = 2
+	g.ball.x = g.ScreenWidth / 2
+	g.ball.y = g.ScreenHeight / 2
+
+	g.playerOne.y = g.ScreenHeight / 2
+	g.playerTwo.y = g.ScreenHeight / 2
+}
+
+func (g *Game) hitBall() {
+	g.ball.dx *= -1
+	if g.ball.dx < 0 {
+		g.ball.dx -= accelerator
+	} else {
+		g.ball.dx += accelerator
+	}
 }
