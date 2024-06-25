@@ -116,7 +116,7 @@ func (g *Game) Update() error {
 	switch g.state {
 	case mainMenu:
 		// Start the game.
-		if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
+		if inpututil.IsKeyJustPressed(ebiten.KeyEnter) || inpututil.IsKeyJustPressed(ebiten.KeySpace) {
 			g.state = gameLoop
 		}
 
