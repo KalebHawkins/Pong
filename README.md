@@ -13,6 +13,8 @@
 
 A Pong game written in Golang using the Ebitengine graphics library.
 
+![PongGamplay](./docs/pong.gif)
+
 ## Features
 
 * Single player mode
