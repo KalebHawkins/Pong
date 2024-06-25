@@ -1,14 +1,5 @@
 # Pong
 
-* Summary
-* Features
-* Installation
-* Running the Game
-* Controls
-* Contributing
-* License
-* Project Description
-
 ## Summary
 
 A Pong game written in Golang using the Ebitengine graphics library.
@@ -28,11 +19,13 @@ Clone this repository:
 
 ```shell
 git clone https://github.com/KalebHawkins/pong.git
+cd pong.git
 ```
+
 Install dependencies:
 
 ```shell
-go mod download
+go mod tidy
 ```
 
 ## Running the Game
@@ -41,7 +34,7 @@ Navigate to the project directory in your terminal.
 Build the executable:
 
 ```shell
-go build
+go build . -o pong
 ```
 
 Run the game:
